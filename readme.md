@@ -65,3 +65,11 @@ sudo chown -R $USER:$USER ./src
 ```bash
 ./local.sh start
 ```
+
+> Foydali docker komandalari:
+
+```bash
+ docker stop $(docker ps -q)
+ docker rm $(docker ps -a -q)
+ docker rmi $(docker images -q)
+ ```
