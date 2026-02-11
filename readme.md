@@ -56,7 +56,9 @@ exit
 
 ```bash
 docker compose exec app chmod -R 775 storage bootstrap/cache
+
 docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+
 sudo chown -R $USER:$USER ./src
 ```
 
