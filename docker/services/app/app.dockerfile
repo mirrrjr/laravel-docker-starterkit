@@ -1,49 +1,36 @@
-FROM php:8.4-fpm
+FROM node:22-bookworm-slim AS node
+
+FROM php:8.4-fpm-bookworm
 
 WORKDIR /var/www
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    jpegoptim optipng pngquant gifsicle \
-    locales \
-    unzip \
-    vim \
-    zip
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    PATH="/var/www/vendor/bin:${PATH}"
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-
-# Graphics Draw
-RUN apt-get update && apt-get install -y \
-    libfreetype6-dev \
-    libjpeg62-turbo-dev \
-    libpng-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        libfreetype6-dev \
+        libicu-dev \
+        libjpeg62-turbo-dev \
+        libonig-dev \
+        libpng-dev \
+        libzip-dev \
+        unzip \
+        zip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd
+    && docker-php-ext-install -j"$(nproc)" bcmath gd intl mbstring opcache pcntl pdo_mysql zip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/*
 
-# Multibyte String
-RUN apt-get update && apt-get install -y libonig-dev && docker-php-ext-install mbstring
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-# Miscellaneous
-RUN docker-php-ext-install bcmath
-RUN docker-php-ext-install exif
-RUN docker-php-ext-install pdo_mysql
+COPY entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Install specific version of Node.js with npm through nvm
-SHELL ["/bin/bash", "--login", "-c"]
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-RUN nvm install 24
-
-# Install Cron
-RUN apt-get update && apt-get install -y cron
-RUN echo "* * * * * root php /var/www/artisan schedule:run >> /var/log/cron.log 2>&1" >> /etc/crontab
-RUN touch /var/log/cron.log
-
-CMD bash -c "cron && php-fpm"
+ENTRYPOINT ["entrypoint"]
+CMD ["php-fpm", "-F"]
