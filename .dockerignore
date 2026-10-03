@@ -1,0 +1,6 @@
+.git
+.idea
+src/.env
+src/vendor
+src/node_modules
+docker/volumes

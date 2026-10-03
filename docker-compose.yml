@@ -1,69 +1,83 @@
+name: laravel-starterkit
+
 services:
-  # Application
   app:
     build:
       context: ./docker/services/app
       dockerfile: app.dockerfile
-    working_dir: /var/www
+    environment:
+      PUID: ${HOST_UID:-1000}
+      PGID: ${HOST_GID:-1000}
     volumes:
       - ./src:/var/www
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-      # dns
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-
-  # Web Server
   web:
     build:
       context: ./docker/services/web
       dockerfile: web.dockerfile
-    working_dir: /var/www
     volumes:
-      - ./src:/var/www
-    ports:
-      - "8000:80"
-
-  # Database
-  database:
-    image: mysql:8.0.25
-    volumes:
-      - ./docker/volumes/mysql:/var/lib/mysql
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_USER: ${DB_USERNAME}
-    ports:
-      - "3306:3306"
-
-  # Database Management
-  pma:
-    image: phpmyadmin:5.1
-    environment:
-      - PMA_ARBITRARY=1
-      - PMA_HOST=${DB_HOST}
-      - PMA_USER=${DB_USERNAME}
-      - PMA_PASSWORD=${DB_PASSWORD}
-      - PMA_PORT=${DB_PORT}
+      - ./src:/var/www:ro
     depends_on:
-      - "database"
+      - app
     ports:
-      - "8888:80"
+      - "${APP_PORT:-8000}:80"
 
-  # Caching
-  redis:
-    image: redis:alpine
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
     volumes:
-      - ./docker/volumes/redis:/data
+      - mysql_data:/var/lib/mysql
     ports:
-      - "6379:6379"
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
 
-  # Mailing Server
-  mailhog:
-    image: mailhog/mailhog:latest
-    logging:
-      driver: "none"
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${FORWARD_MAIL_PORT:-8025}:8025"
+      - "${FORWARD_SMTP_PORT:-1025}:1025"
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    profiles: ["tools"]
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USERNAME:-laravel}
+      PMA_PASSWORD: ${DB_PASSWORD:-secret}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${PMA_PORT:-8888}:80"
+
+volumes:
+  mysql_data:
+  redis_data:
