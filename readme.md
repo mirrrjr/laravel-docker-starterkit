@@ -1,9 +1,7 @@
 # Laravel Docker Starter Kit
 
-Laravel 12 uchun ishga tayyor, universal Docker muhiti. Starter kit PHP-FPM,
-Nginx, MySQL, Redis va Mailpit bilan birga keladi. Hostdagi fayl egasi bilan
-PHP-FPM foydalanuvchisi avtomatik moslashtiriladi; shu sabab `storage` yoki
-`bootstrap/cache` uchun qo'lda `sudo chmod/chown` qilish talab qilinmaydi.
+Laravel 13 uchun ishga tayyor, universal Docker muhiti. Starter kit PHP-FPM,
+Nginx, MySQL, Redis va Mailpit bilan birga keladi.
 
 ## Talablar
 
@@ -30,12 +28,12 @@ o'rnatadi, Laravel `APP_KEY` qiymatini yaratadi va migratsiyalarni bajaradi.
 
 So'ng quyidagi manzillar ochiladi:
 
-| Xizmat | Manzil |
-| --- | --- |
-| Laravel | http://localhost:8000 |
+| Xizmat                | Manzil                |
+| --------------------- | --------------------- |
+| Laravel               | http://localhost:8000 |
 | Mailpit (test xatlar) | http://localhost:8025 |
-| MySQL | `127.0.0.1:3306` |
-| Redis | `127.0.0.1:6379` |
+| MySQL                 | `127.0.0.1:3306`      |
+| Redis                 | `127.0.0.1:6379`      |
 
 Ilk ishga tushishda `src/.env` dagi standart `DB_PASSWORD=secret` va
 `DB_ROOT_PASSWORD=root` qiymatlarini faqat lokal development uchun ishlating.
@@ -62,6 +60,15 @@ Vite development server kerak bo'lsa, alohida terminalda `./local.sh npm run dev
 -- --host 0.0.0.0` buyrug'ini ishga tushiring va `src/.env` ga
 `VITE_HOST=0.0.0.0` qo'shing. Production uchun `./local.sh npm run build` dan
 foydalaning.
+
+`npm` bilan bog'liq xato chiqsa
+
+```bash
+docker compose --env-file ./src/.env exec -u root app bash`
+
+mkdir -p /home/laravel
+chown -R laravel:laravel /home/laravel
+```
 
 ### PHPMyAdmin
 
@@ -105,31 +112,6 @@ cache'ini tozalang va Compose'ni qayta yarating:
 Port to'qnashuvi bo'lsa, xuddi shu faylga masalan `APP_PORT=8080`,
 `FORWARD_DB_PORT=3307` yoki `PMA_PORT=8889` qo'shing. Laravel manzilini ham
 mos ravishda `APP_URL=http://localhost:8080` qilib o'zgartiring.
-
-## Permission va `.env` muammolari
-
-Oldingi stackdagi muammolarning ikki asosiy sababi bartaraf qilindi:
-
-1. `local.sh` har safar `docker compose --env-file src/.env` ishlatadi. Endi
-   Compose interpolation'i va Laravel ayni bitta `DB_*` qiymatlarini o'qiydi.
-2. App container ishga tushganda PHP-FPM host foydalanuvchisining UID/GID'i bilan
-   ishlaydi va faqat Laravel yozadigan `storage` hamda `bootstrap/cache`
-   kataloglarini shu foydalanuvchiga beradi. `artisan`, `composer` va `npm`
-   yordamchi buyruqlari ham shu UID/GID bilan bajariladi.
-
-Agar oldingi root-owned fayllar mavjud bo'lsa, bir marta quyidagini bajaring:
-
-```bash
-./local.sh permissions
-./local.sh artisan optimize:clear
-```
-
-`Permission denied` davom etsa, container'larni qayta yarating:
-
-```bash
-./local.sh down
-./local.sh rebuild
-```
 
 `.env` dagi MySQL parolini allaqachon ishga tushgan database uchun o'zgartirish
 faqat yangi database volume yaratilganda ta'sir qiladi. Lokal ma'lumotlarni
