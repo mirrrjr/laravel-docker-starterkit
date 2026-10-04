@@ -1,5 +1,7 @@
 # Laravel Docker Starter Kit
 
+🌐 **English** | [O'zbekcha](README.uz.md)
+
 A ready-to-use, universal Docker environment for Laravel 13. The starter kit comes with PHP-FPM, Nginx, MySQL, Redis, and Mailpit.
 
 ## Requirements
@@ -113,7 +115,3 @@ docker compose --env-file src/.env down -v
 - **mailpit**: captures and displays development emails.
 
 You can check the final Compose configuration with the `docker compose --env-file src/.env config` command. Do not use this development stack directly for production deployment: provide secrets through a secret manager, close the development ports, and build a separate production image.
-
----
-
-Note: in the original, the `npm` troubleshooting code block had a stray backtick at the end and was missing a colon before it. I fixed both in the translation.

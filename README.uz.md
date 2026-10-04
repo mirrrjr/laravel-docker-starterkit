@@ -1,5 +1,7 @@
 # Laravel Docker Starter Kit
 
+🌐 [English](README.md) | **O'zbekcha**
+
 Laravel 13 uchun ishga tayyor, universal Docker muhiti. Starter kit PHP-FPM,
 Nginx, MySQL, Redis va Mailpit bilan birga keladi.
 
